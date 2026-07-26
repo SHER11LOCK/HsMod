@@ -4,28 +4,44 @@ on:
   push:
     branches: [ "bepinex5" ]
   pull_request:
-  merge_group:
+    merge_group:
 
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
-    # Checkout the repository
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    
-    # Setup .NET SDK
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 8.x
-    
-    # Restore dependencies
-    - name: Restore dependencies
-      run: dotnet restore --locked-mode
-    
-    # Build the project
-    - name: Build HsMod
-      run: dotnet build --configuration Release --no-restore
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.x
+
+      - name: Restore dependencies
+        run: dotnet restore --locked-mode
+
+      - name: Build HsMod Release
+        run: dotnet build --configuration Release --no-restore
+
+      # 整理打包文件（修复路径引号问题）
+      - name: Package Files
+        run: |
+          mkdir Release
+          copy "src\HsMod\bin\Release\net48\HsMod.dll" Release\
+          copy "README.md" Release\
+          copy "LICENSE" Release\
+
+      # 压缩ZIP包
+      - name: Zip Package
+        run: Compress-Archive -Path "Release\*" -DestinationPath "HsMod-Custom-Build.zip" -Force
+
+      # 上传到制品库
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: HsMod-自定义编译包
+          path: HsMod-Custom-Build.zip
